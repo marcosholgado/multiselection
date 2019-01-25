@@ -2,6 +2,7 @@ package com.marcosholgado.multiselection
 
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
+import androidx.recyclerview.selection.Selection
 import androidx.recyclerview.selection.SelectionPredicates
 import androidx.recyclerview.selection.SelectionTracker
 import androidx.recyclerview.selection.StableIdKeyProvider
@@ -21,9 +22,15 @@ class MainActivity : AppCompatActivity() {
 
         recyclerView.layoutManager = LinearLayoutManager(this)
         recyclerView.adapter = adapter
-        adapter.list = createRandomIntList()
-        adapter.notifyDataSetChanged()
+        setupAdapter()
+        setupTracker()
 
+        button.setOnClickListener {
+            setupAdapter()
+        }
+    }
+
+    private fun setupTracker() {
         tracker = SelectionTracker.Builder<Long>(
             "mySelection",
             recyclerView,
@@ -34,7 +41,30 @@ class MainActivity : AppCompatActivity() {
             SelectionPredicates.createSelectAnything()
         ).build()
 
+        tracker?.addObserver(
+            object : SelectionTracker.SelectionObserver<Long>() {
+                override fun onSelectionChanged() {
+                    super.onSelectionChanged()
+                    val nItems: Int? = tracker?.selection!!.size()
+                    if (nItems == 2) {
+                        launchSum(tracker?.selection!!)
+                    }
+                }
+            })
+
         adapter.tracker = tracker
+    }
+
+    private fun launchSum(selection: Selection<Long>) {
+        val list = selection.map {
+            adapter.list[it.toInt()]
+        }.toList()
+        SumActivity.launch(this, list as ArrayList<Int>)
+    }
+
+    private fun setupAdapter() {
+        adapter.list = createRandomIntList()
+        adapter.notifyDataSetChanged()
     }
 
     private fun createRandomIntList(): List<Int> {
